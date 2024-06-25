@@ -3,11 +3,34 @@
 #endif 
 
 #include <windows.h>
+#include "graphics.h"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
+
+    // Pixel Format Struct
+    PIXELFORMATDESCRIPTOR pfd =
+    {
+        sizeof(PIXELFORMATDESCRIPTOR),
+        1,
+        PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    // Flags
+        PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
+        32,                   // Colordepth of the framebuffer.
+        0, 0, 0, 0, 0, 0,
+        0,
+        0,
+        0,
+        0, 0, 0, 0,
+        24,                   // Number of bits for the depthbuffer
+        8,                    // Number of bits for the stencilbuffer
+        0,                    // Number of Aux buffers in the framebuffer.
+        PFD_MAIN_PLANE,
+        0,
+        0, 0, 0
+    };
+
     // Register the window class.
     const wchar_t CLASS_NAME[]  = L"Sample Window Class";
     
@@ -25,7 +48,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         0,                              // Optional window styles.
         CLASS_NAME,                     // Window class
         L"WaveCraft",    // Window text
-        WS_OVERLAPPEDWINDOW,            // Window style
+        WS_OVERLAPPEDWINDOW | CS_OWNDC,            // Window style
 
         // Size and position
         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -41,6 +64,37 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         return 0;
     }
 
+    // GetDC Function
+    HDC hdc = GetDC(hwnd);
+
+    // ChoosePixelFormat Function
+    int format = ChoosePixelFormat(hdc, &pfd);
+
+    if (format == 0)
+    {
+        return 0;
+    }
+
+    // DescribePixelFormat Function
+    DescribePixelFormat(hdc, format, sizeof(pfd), &pfd);
+
+    // SetPixelFormat Function
+    if (SetPixelFormat(hdc, format, &pfd) == false)
+    {
+        return 0;
+    }
+
+    // wglCreateContext Function
+    HGLRC hglrc = wglCreateContext(hdc);
+
+    // wglMakeCurrent Function
+    if (wglMakeCurrent(hdc, hglrc) == false) {
+        return 0;
+    }
+
+    // Init Graphics
+    initGraphics();
+
     ShowWindow(hwnd, nCmdShow);
 
     // Run the message loop.
@@ -50,6 +104,20 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
+
+        // Render Frame
+        renderFrame();
+        SwapBuffers(hdc);
+    }
+
+    // wglMakeCurrent Function
+    if (wglMakeCurrent(hdc, NULL) == false) {
+        return 0;
+    }
+
+    // wglDeleteContext Function
+    if (wglDeleteContext(hglrc) == false) {
+        return 0;
     }
 
     return 0;
