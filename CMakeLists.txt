@@ -19,6 +19,8 @@ add_executable(
     ${src_files}
 )
 
+target_link_libraries(${project_target} opengl32)
+
 target_include_directories(${project_target} PUBLIC
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/src
